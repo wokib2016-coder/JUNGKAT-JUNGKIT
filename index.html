@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>⚖️ Kesetimbangan — Jungkat, Pikulan & Ember</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body {
+    height:100%;
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background:linear-gradient(160deg, #0a1418 0%, #142a35 50%, #0a1418 100%);
+    color:#e8f1f5;
+    overflow-x:hidden;
+  }
+  body {
+    min-height:100vh;
+    padding:12px 10px 20px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .header {
+    text-align:center;
+    margin-bottom:14px;
+    animation:fadeDown 0.6s ease;
+  }
+  .header h1 {
+    font-size:1.25rem;
+    background:linear-gradient(90deg, #ffd700, #ffb300, #ffd700);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+    font-weight:800;
+    letter-spacing:0.5px;
+  }
+  .header p {
+    font-size:0.72rem;
+    color:#7a95a3;
+    margin-top:3px;
+    letter-spacing:0.3px;
+  }
+  .tabs {
+    display:flex;
+    gap:6px;
+    width:100%;
+    max-width:480px;
+    margin-bottom:12px;
+    padding:4px;
+    background:rgba(255,255,255,0.04);
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .tab {
+    flex:1;
+    padding:10px 4px;
+    text-align:center;
+    font-size:0.68rem;
+    font-weight:600;
+    border-radius:10px;
+    cursor:pointer;
+    transition:all 0.3s cubic-bezier(.4,0,.2,1);
+    color:#7a95a3;
+    user-select:none;
+    line-height:1.2;
+  }
+  .tab.active {
+    background:linear-gradient(135deg, #ffd700, #ffb300);
+    color:#0a1418;
+    box-shadow:0 4px 15px rgba(255,215,0,0.3);
+    transform:scale(1.02);
+  }
+  .panel {
+    display:none;
+    width:100%;
+    max-width:480px;
+    animation:fadeUp 0.4s ease;
+  }
+  .panel.active { display:block; }
+  .canvas-wrap {
+    position:relative;
+    width:100%;
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 8px 30px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.08);
+    margin-bottom:14px;
+    background:radial-gradient(ellipse at 50% 100%, #1e3a4a 0%, #0f1f28 70%);
+    aspect-ratio: 700 / 380;
+  }
+  canvas {
+    display:block;
+    width:100%;
+    height:100%;
+  }
+  .score-badge {
+    position:absolute;
+    top:28px; right:10px;
+    padding:5px 12px;
+    border-radius:20px;
+    font-size:0.7rem;
+    font-weight:800;
+    backdrop-filter:blur(10px);
+    transition:all 0.3s cubic-bezier(.4,0,.2,1);
+    letter-spacing:0.3px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.3);
+  }
+  .score-badge.balanced {
+    background:rgba(76,175,80,0.35);
+    color:#a5f0a8;
+    border:1px solid rgba(76,175,80,0.7);
+    animation:pulseGreen 2s infinite;
+  }
+  .score-badge.unbalanced {
+    background:rgba(244,67,54,0.35);
+    color:#ffb3b3;
+    border:1px solid rgba(244,67,54,0.7);
+    animation:pulseRed 1.2s infinite;
+  }
+  @keyframes pulseGreen {
+    0%,100% { box-shadow:0 2px 10px rgba(0,0,0,0.3), 0 0 0 0 rgba(76,175,80,0.5); }
+    50% { box-shadow:0 2px 10px rgba(0,0,0,0.3), 0 0 0 6px rgba(76,175,80,0); }
+  }
+  @keyframes pulseRed {
+    0%,100% { box-shadow:0 2px 10px rgba(0,0,0,0.3), 0 0 0 0 rgba(244,67,54,0.5); }
+    50% { box-shadow:0 2px 10px rgba(0,0,0,0.3), 0 0 0 6px rgba(244,67,54,0); }
+  }
+  .equation-box {
+    position:absolute;
+    bottom:8px; left:50%;
+    transform:translateX(-50%);
+    padding:4px 10px;
+    border-radius:8px;
+    font-size:0.65rem;
+    font-weight:700;
+    backdrop-filter:blur(8px);
+    letter-spacing:0.3px;
+    white-space:nowrap;
+    transition:all 0.3s;
+  }
+  .equation-box.balanced {
+    background:rgba(76,175,80,0.25);
+    color:#a5f0a8;
+    border:1px solid rgba(76,175,80,0.5);
+  }
+  .equation-box.unbalanced {
+    background:rgba(244,67,54,0.2);
+    color:#ffb3b3;
+    border:1px solid rgba(244,67,54,0.5);
+  }
+  .controls {
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:14px;
+    padding:12px;
+    margin-bottom:10px;
+    backdrop-filter:blur(10px);
+  }
+  .ctrl { margin-bottom:11px; }
+  .ctrl:last-child { margin-bottom:0; }
+  .ctrl-head {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:6px;
+    font-size:0.72rem;
+    color:#a0b8c4;
+  }
+  .ctrl-head .lbl {
+    display:flex;
+    align-items:center;
+    gap:5px;
+  }
+  .dot {
+    width:8px; height:8px;
+    border-radius:50%;
+    box-shadow:0 0 8px currentColor;
+  }
+  .dot.left { background:#4fc3f7; color:#4fc3f7; }
+  .dot.right { background:#ef5350; color:#ef5350; }
+  .dot.shoulder { background:#ffd700; color:#ffd700; }
+  .val {
+    font-weight:800;
+    color:#ffd700;
+    font-variant-numeric:tabular-nums;
+    font-size:0.8rem;
+  }
+  input[type=range] {
+    -webkit-appearance:none;
+    appearance:none;
+    width:100%;
+    height:6px;
+    border-radius:3px;
+    background:rgba(255,255,255,0.1);
+    outline:none;
+    cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance:none;
+    appearance:none;
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    background:linear-gradient(135deg, #ffd700, #ffb300);
+    cursor:pointer;
+    box-shadow:0 2px 8px rgba(255,215,0,0.5), 0 0 0 3px rgba(255,215,0,0.15);
+    transition:transform 0.15s;
+  }
+  input[type=range]::-webkit-slider-thumb:active {
+    transform:scale(1.2);
+    box-shadow:0 2px 12px rgba(255,215,0,0.8), 0 0 0 5px rgba(255,215,0,0.25);
+  }
+  input[type=range]::-moz-range-thumb {
+    width:22px;
+    height:22px;
+    border:none;
+    border-radius:50%;
+    background:linear-gradient(135deg, #ffd700, #ffb300);
+    cursor:pointer;
+    box-shadow:0 2px 8px rgba(255,215,0,0.5);
+  }
+  .info-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .info-card {
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:10px;
+    padding:8px 10px;
+    text-align:center;
+  }
+  .info-card .k {
+    font-size:0.6rem;
+    color:#7a95a3;
+    text-transform:uppercase;
+    letter-spacing:0.8px;
+    margin-bottom:3px;
+  }
+  .info-card .v {
+    font-size:0.95rem;
+    font-weight:800;
+    font-variant-numeric:tabular-nums;
+  }
+  .info-card.left .v { color:#4fc3f7; }
+  .info-card.right .v { color:#ef5350; }
+  .info-card.diff .v { color:#ffd700; }
+  .diff-card {
+    grid-column:1 / -1;
+    background:linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,215,0,0.03));
+    border-color:rgba(255,215,0,0.2);
+  }
+  .reset-btn {
+    width:100%;
+    padding:11px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:10px;
+    color:#e8f1f5;
+    font-weight:700;
+    font-size:0.8rem;
+    cursor:pointer;
+    transition:all 0.2s;
+    letter-spacing:0.3px;
+  }
+  .reset-btn:active {
+    background:rgba(255,215,0,0.15);
+    border-color:rgba(255,215,0,0.4);
+    transform:scale(0.98);
+  }
+  .footer {
+    margin-top:16px;
+    font-size:0.65rem;
+    color:#4a6572;
+    text-align:center;
+    letter-spacing:0.5px;
+  }
+  @keyframes fadeDown {
+    from { opacity:0; transform:translateY(-10px); }
+    to { opacity:1; transform:translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(10px); }
+    to { opacity:1; transform:translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚖️ Kesetimbangan</h1>
+  <p>Ayo Kuasai Konsepnya dan Pahami Konteksnya</p>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab(0)">🎠<br>Jungkat</div>
+  <div class="tab" onclick="switchTab(1)">🪣<br>Pikulan</div>
+  <div class="tab" onclick="switchTab(2)">🚶<br>1 Ember</div>
+</div>
+
+<!-- ================= TAB 1: JUNGKAT-JUNGKIT ================= -->
+<div class="panel active" id="panel0">
+  <div class="canvas-wrap">
+    <canvas id="cv1" width="700" height="380"></canvas>
+    <div class="score-badge balanced" id="badge1">✅ SEIMBANG</div>
+    <div class="equation-box balanced" id="eq1">m₁·r₁ = m₂·r₂</div>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl">
+      <div class="ctrl-head">
+        <span class="lbl"><span class="dot left"></span> Massa Anak Kiri</span>
+        <span class="val" id="m1v">30 kg</span>
+      </div>
+      <input type="range" id="m1" min="10" max="80" value="30" step="1">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-head">
+        <span class="lbl"><span class="dot left"></span> Posisi Anak Kiri dari Poros</span>
+        <span class="val" id="r1v">1.50 m</span>
+      </div>
+      <input type="range" id="r1" min="0.5" max="2.5" value="1.5" step="0.05">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-head">
+        <span class="lbl"><span class="dot right"></span> Massa Anak Kanan</span>
+        <span class="val" id="m2v">45 kg</span>
+      </div>
+      <input type="range" id="m2" min="10" max="80" value="45" step="1">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-head">
+        <span class="lbl"><span class="dot right"></span> Posisi Anak Kanan dari Poros</span>
+        <span class="val" id="r2v">1.00 m</span>
+      </div>
+      <input type="range" id="r2" min="0.5" max="2.5" value="1.0" step="0.05">
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-card left">
+      <div class="k">τ Kiri</div>
+      <div class="v" id="t1v">450 N·m</div>
+    </div>
+    <div class="info-card right">
+      <div class="k">τ Kanan</div>
+      <div class="v" id="t2v">450 N·m</div>
+    </div>
+    <div class="info-card diff diff-card">
+      <div class="k">Selisih Torsi |τ₁ − τ₂|</div>
+      <div class="v" id="dv1">0 N·m</div>
+    </div>
+  </div>
+
+  <button class="reset-btn" onclick="reset1()">🔄 Reset ke Posisi Seimbang</button>
+</div>
+
+<!-- ================= TAB 2: MEMIKUL 2 EMBER ================= -->
+<div class="panel" id="panel1">
+  <div class="canvas-wrap">
+    <canvas id="cv2" width="700" height="380"></canvas>
+    <div class="score-badge balanced" id="badge2">✅ SEIMBANG</div>
+    <div class="equation-box balanced" id="eq2">m₁·r₁ = m₂·r₂</div>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl">
+      <div class="ctrl-head">
+        <span class="lbl"><span class="dot left"></span> Volume Air Ember Depan</span>
+        <span class="val" id="p1v">5.0 L</span>
+      </div>
+      <input type="range" id="p1" min="1" max="20" value="5" step="0.5">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-head">
+        <span class="lbl"><span class="dot right"></span> Volume Air Ember Belakang</span>
+        <span class="val" id="p2v">8.0 L</span>
+      </div>
+      <input type="range" id="p2" min="1" max="20" value="8" step="0.5">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-head">
+        <span class="lbl"><span class="dot shoulder"></span> Jarak Bahu ke Ember Depan (r₁)</span>
+        <span class="val" id="pr1v">0.92 m</span>
+      </div>
+      <input type="range" id="pr1" min="0.1" max="1.4" value="0.92" step="0.01">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-head">
+        <span class="lbl"><span class="dot shoulder"></span> Jarak Bahu ke Ember Belakang (r₂)</span>
+        <span class="val" id="pr2v">0.58 m</span>
+      </div>
+      <input type="range" id="pr2" min="0.1" max="1.4" value="0.58" step="0.01">
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-card left">
+      <div class="k">τ Ember Depan</div>
+      <div class="v" id="pt1v">46.0 N·m</div>
+    </div>
+    <div class="info-card right">
+      <div class="k">τ Ember Belakang</div>
+      <div class="v" id="pt2v">46.4 N·m</div>
+    </div>
+    <div class="info-card diff diff-card">
+      <div class="k">Selisih Torsi |τ₁ − τ₂|</div>
+      <div class="v" id="pdv">0.4 N·m</div>
+    </div>
+  </div>
+
+  <button class="reset-btn" onclick="reset2()">🔄 Reset ke Posisi Seimbang</button>
+</div>
+
+<!-- ================= TAB 3: 1 EMBER ================= -->
+<div class="panel" id="panel2">
+  <div class="canvas-wrap">
+    <canvas id="cv3" width="700" height="380"></canvas>
+    <div class="score-badge balanced" id="badge3">✅ SEIMBANG</div>
+    <div class="equation-box balanced" id="eq3">m₁·r₁ = m₂·r₂</div>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl">
+      <div class="ctrl-head">
+        <span class="lbl"><span class="dot left"></span> Volume Air Ember</span>
+        <span class="val" id="s1v">8.0 L</span>
+      </div>
+      <input type="range" id="s1" min="1" max="20" value="8" step="0.5">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-head">
+        <span class="lbl"><span class="dot shoulder"></span> Posisi Bahu dari Ujung Kiri</span>
+        <span class="val" id="sr1v">0.50 m</span>
+      </div>
+      <input type="range" id="sr1" min="0.10" max="1.40" value="0.50" step="0.01">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-head">
+        <span class="lbl"><span class="dot shoulder"></span> Posisi Ember dari Ujung Kiri</span>
+        <span class="val" id="se1v">0.10 m</span>
+      </div>
+      <input type="range" id="se1" min="0.05" max="1.40" value="0.10" step="0.01">
+    </div>
+    <div class="ctrl" style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04);">
+      <span class="lbl" style="font-size:0.72rem; color:#a0b8c4; display:flex; align-items:center; gap:5px;">
+        <span class="dot right"></span> Massa Penyeimbang (Tetap)
+      </span>
+      <span class="val" style="font-weight:800; color:#ffd700; font-size:0.8rem;">10.0 kg</span>
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-card left">
+      <div class="k">τ Ember (beban)</div>
+      <div class="v" id="st1v">32.0 N·m</div>
+    </div>
+    <div class="info-card right">
+      <div class="k">τ Penyeimbang</div>
+      <div class="v" id="st2v">100.0 N·m</div>
+    </div>
+    <div class="info-card diff diff-card">
+      <div class="k">Selisih Torsi |τ_beban − τ_penyeimbang|</div>
+      <div class="v" id="sdv">68.0 N·m</div>
+    </div>
+  </div>
+
+  <button class="reset-btn" onclick="reset3()">🔄 Reset ke Posisi Seimbang</button>
+</div>
+
+<div class="footer">Fisika XI — Fase F | Deep Learning | Kesetimbangan</div>
+
+<script>
+const g = 10;
+const cv1 = document.getElementById('cv1');
+const ctx1 = cv1.getContext('2d');
+const cv2 = document.getElementById('cv2');
+const ctx2 = cv2.getContext('2d');
+const cv3 = document.getElementById('cv3');
+const ctx3 = cv3.getContext('2d');
+
+const PANJANG_PIKULAN = 1.5; // meter
+const TOLERANSI = 2.5; // N·m
+const MASSA_PENYEIMBANG = 10; // kg (TETAP)
+
+function setupCanvas(canvas, ctx) {
+  const dpr = window.devicePixelRatio || 1;
+  const parent = canvas.parentElement;
+  const cssWidth = parent.clientWidth || 480;
+  const cssHeight = cssWidth * (380 / 700);
+  canvas.width = cssWidth * dpr;
+  canvas.height = cssHeight * dpr;
+  canvas.style.width = cssWidth + 'px';
+  canvas.style.height = cssHeight + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function switchTab(i) {
+  document.querySelectorAll('.tab').forEach((t, idx) => t.classList.toggle('active', idx === i));
+  document.querySelectorAll('.panel').forEach((p, idx) => p.classList.toggle('active', idx === i));
+
+  setTimeout(() => {
+    setupCanvas(cv1, ctx1);
+    setupCanvas(cv2, ctx2);
+    setupCanvas(cv3, ctx3);
+    draw1(); draw2(); draw3();
+  }, 50);
+}
+
+// Fungsi pembantu untuk menggambar teks sudut (Wokib bergaris bawah, Deep Learning di bawahnya, dan 2026 di kanan atas)
+function drawCornerWatermarks(ctx) {
+  ctx.save();
+  ctx.font = 'bold 11px -apple-system, sans-serif';
+  
+  // Sudut Kiri Atas: Wokib (dengan garis bawah) & Deep Learning
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffd700';
+  ctx.fillText('Wokib', 12, 20);
+  
+  // Garis bawah kata Wokib
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(12, 23);
+  ctx.lineTo(12 + ctx.measureText('Wokib').width, 23);
+  ctx.stroke();
+
+  // Tulisan Deep Learning di bawahnya
+  ctx.font = '9px -apple-system, sans-serif';
+  ctx.fillStyle = '#7a95a3';
+  ctx.fillText('Deep Learning', 12, 35);
+
+  // Sudut Kanan Atas: 2026
+  ctx.font = 'bold 11px -apple-system, sans-serif';
+  ctx.fillStyle = '#7a95a3';
+  ctx.textAlign = 'right';
+  ctx.fillText('2026', ctx.canvas.width / (window.devicePixelRatio || 1) - 12, 20);
+  
+  ctx.restore();
+}
+
+// =================== TAB 1: JUNGKAT ===================
+function getJ() {
+  return {
+    m1: +document.getElementById('m1').value,
+    r1: +document.getElementById('r1').value,
+    m2: +document.getElementById('m2').value,
+    r2: +document.getElementById('r2').value,
+  };
+}
+
+function update1() {
+  const j = getJ();
+  document.getElementById('m1v').textContent = j.m1 + ' kg';
+  document.getElementById('r1v').textContent = j.r1.toFixed(2) + ' m';
+  document.getElementById('m2v').textContent = j.m2 + ' kg';
+  document.getElementById('r2v').textContent = j.r2.toFixed(2) + ' m';
+
+  const t1 = j.m1 * g * j.r1;
+  const t2 = j.m2 * g * j.r2;
+  const diff = Math.abs(t1 - t2);
+
+  document.getElementById('t1v').textContent = t1.toFixed(1) + ' N·m';
+  document.getElementById('t2v').textContent = t2.toFixed(1) + ' N·m';
+  document.getElementById('dv1').textContent = diff.toFixed(2) + ' N·m';
+
+  const badge = document.getElementById('badge1');
+  const eq = document.getElementById('eq1');
+  if (diff < TOLERANSI) {
+    badge.className = 'score-badge balanced';
+    badge.textContent = '✅ SEIMBANG';
+    eq.className = 'equation-box balanced';
+  } else {
+    badge.className = 'score-badge unbalanced';
+    badge.textContent = '❌ TIDAK SEIMBANG';
+    eq.className = 'equation-box unbalanced';
+  }
+  eq.textContent = `${j.m1}×${j.r1.toFixed(2)} = ${j.m2}×${j.r2.toFixed(2)}  →  ${t1.toFixed(1)} ${diff < TOLERANSI ? '=' : '≠'} ${t2.toFixed(1)} N·m`;
+  draw1();
+}
+
+function draw1() {
+  const j = getJ();
+  const W = cv1.clientWidth, H = cv1.clientHeight;
+  if (W === 0 || H === 0) return;
+  ctx1.clearRect(0, 0, W, H);
+
+  const cx = W / 2;
+  const groundY = H - 30;
+  const porosY = groundY - 50;
+
+  const t1 = j.m1 * g * j.r1;
+  const t2 = j.m2 * g * j.r2;
+  const total = t1 + t2;
+  let angle = 0;
+  if (total > 0) angle = Math.atan2(t1 - t2, total) * 0.5;
+
+  const maxR = 2.5;
+  const scale = Math.min(W * 0.42, 260) / maxR;
+  const halfArm = 2.5 * scale;
+
+  const papanKiriX = cx - halfArm * Math.cos(angle);
+  const papanKiriY = porosY - halfArm * Math.sin(angle);
+  const papanKananX = cx + halfArm * Math.cos(angle);
+  const papanKananY = porosY + halfArm * Math.sin(angle);
+
+  ctx1.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx1.beginPath();
+  ctx1.ellipse(cx, groundY + 5, 55, 8, 0, 0, Math.PI * 2);
+  ctx1.fill();
+
+  const grad = ctx1.createLinearGradient(cx - 30, porosY, cx + 30, groundY);
+  grad.addColorStop(0, '#5a7a8a');
+  grad.addColorStop(1, '#2a3f4a');
+  ctx1.fillStyle = grad;
+  ctx1.beginPath();
+  ctx1.moveTo(cx, porosY);
+  ctx1.lineTo(cx - 30, groundY);
+  ctx1.lineTo(cx + 30, groundY);
+  ctx1.closePath();
+  ctx1.fill();
+
+  ctx1.strokeStyle = 'rgba(0,0,0,0.4)';
+  ctx1.lineWidth = 14;
+  ctx1.lineCap = 'round';
+  ctx1.beginPath();
+  ctx1.moveTo(papanKiriX + 3, papanKiriY + 3);
+  ctx1.lineTo(papanKananX + 3, papanKananY + 3);
+  ctx1.stroke();
+
+  const boardGrad = ctx1.createLinearGradient(papanKiriX, papanKiriY, papanKananX, papanKananY);
+  boardGrad.addColorStop(0, '#ffb300');
+  boardGrad.addColorStop(0.5, '#ffd700');
+  boardGrad.addColorStop(1, '#ffb300');
+  ctx1.strokeStyle = boardGrad;
+  ctx1.lineWidth = 12;
+  ctx1.beginPath();
+  ctx1.moveTo(papanKiriX, papanKiriY);
+  ctx1.lineTo(papanKananX, papanKananY);
+  ctx1.stroke();
+
+  ctx1.fillStyle = '#1a2a35';
+  ctx1.beginPath();
+  ctx1.arc(cx, porosY, 9, 0, Math.PI * 2);
+  ctx1.fill();
+  ctx1.strokeStyle = '#ffd700';
+  ctx1.lineWidth = 2;
+  ctx1.stroke();
+
+  const anak1X = cx - j.r1 * scale * Math.cos(angle);
+  const anak1Y = porosY - j.r1 * scale * Math.sin(angle);
+  const anak2X = cx + j.r2 * scale * Math.cos(angle);
+  const anak2Y = porosY + j.r2 * scale * Math.sin(angle);
+
+  drawPerson(ctx1, anak1X, anak1Y, j.m1, '#4fc3f7', '#2196f3');
+  drawPerson(ctx1, anak2X, anak2Y, j.m2, '#ef5350', '#c62828');
+
+  ctx1.font = 'bold 12px -apple-system, sans-serif';
+  ctx1.textAlign = 'center';
+  ctx1.fillStyle = 'rgba(255,215,0,0.9)';
+  ctx1.strokeStyle = 'rgba(0,0,0,0.6)';
+  ctx1.lineWidth = 3;
+  const lbl1 = 'r₁ = ' + j.r1.toFixed(2) + ' m';
+  const lbl2 = 'r₂ = ' + j.r2.toFixed(2) + ' m';
+  ctx1.strokeText(lbl1, (cx + anak1X) / 2, (porosY + anak1Y) / 2 + 25);
+  ctx1.fillText(lbl1, (cx + anak1X) / 2, (porosY + anak1Y) / 2 + 25);
+  ctx1.strokeText(lbl2, (cx + anak2X) / 2, (porosY + anak2Y) / 2 + 25);
+  ctx1.fillText(lbl2, (cx + anak2X) / 2, (porosY + anak2Y) / 2 + 25);
+
+  ctx1.strokeStyle = 'rgba(255,215,0,0.35)';
+  ctx1.lineWidth = 1;
+  ctx1.setLineDash([4, 4]);
+  ctx1.beginPath();
+  ctx1.moveTo(cx, porosY);
+  ctx1.lineTo(anak1X, anak1Y);
+  ctx1.moveTo(cx, porosY);
+  ctx1.lineTo(anak2X, anak2Y);
+  ctx1.stroke();
+  ctx1.setLineDash([]);
+
+  drawCornerWatermarks(ctx1);
+}
+
+function drawPerson(ctx, x, y, mass, color, dark) {
+  const scale = 0.8 + mass / 100;
+  const headR = 12 * scale;
+  const bodyW = 18 * scale;
+  const bodyH = 25 * scale;
+  const cy = y - headR - bodyH / 2 - 5;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(x, y + 3, 20 * scale, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const bodyGrad = ctx.createLinearGradient(x, cy - bodyH, x, cy + bodyH);
+  bodyGrad.addColorStop(0, color);
+  bodyGrad.addColorStop(1, dark);
+  ctx.fillStyle = bodyGrad;
+  ctx.beginPath();
+  ctx.roundRect(x - bodyW / 2, cy - bodyH / 4, bodyW, bodyH, 6);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffe0b2';
+  ctx.beginPath();
+  ctx.arc(x, cy - bodyH / 4 - headR, headR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = dark;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = '#1a2a35';
+  ctx.beginPath();
+  ctx.arc(x - headR * 0.35, cy - bodyH / 4 - headR - 1, 1.6, 0, Math.PI * 2);
+  ctx.arc(x + headR * 0.35, cy - bodyH / 4 - headR - 1, 1.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#1a2a35';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(x, cy - bodyH / 4 - headR + 3, 3.5, 0.2, Math.PI - 0.2);
+  ctx.stroke();
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 5 * scale;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - bodyW / 2, cy - bodyH / 8);
+  ctx.lineTo(x - bodyW / 2 - 7, cy - bodyH / 8 + 10);
+  ctx.moveTo(x + bodyW / 2, cy - bodyH / 8);
+  ctx.lineTo(x + bodyW / 2 + 7, cy - bodyH / 8 + 10);
+  ctx.stroke();
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 12px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+  ctx.lineWidth = 3;
+  const label = mass + ' kg';
+  ctx.strokeText(label, x, cy - bodyH / 4 - headR * 2 - 8);
+  ctx.fillText(label, x, cy - bodyH / 4 - headR * 2 - 8);
+}
+
+function reset1() {
+  document.getElementById('m1').value = 30;
+  document.getElementById('r1').value = 1.5;
+  document.getElementById('m2').value = 45;
+  document.getElementById('r2').value = 1.0;
+  update1();
+}
+
+// =================== TAB 2: PIKULAN 2 EMBER ===================
+function getP() {
+  return {
+    p1: +document.getElementById('p1').value,
+    p2: +document.getElementById('p2').value,
+    pr1: +document.getElementById('pr1').value,
+    pr2: +document.getElementById('pr2').value,
+  };
+}
+
+function update2() {
+  const p = getP();
+  document.getElementById('p1v').textContent = p.p1.toFixed(1) + ' L';
+  document.getElementById('p2v').textContent = p.p2.toFixed(1) + ' L';
+  document.getElementById('pr1v').textContent = p.pr1.toFixed(2) + ' m';
+  document.getElementById('pr2v').textContent = p.pr2.toFixed(2) + ' m';
+
+  const t1 = p.p1 * g * p.pr1;
+  const t2 = p.p2 * g * p.pr2;
+  const diff = Math.abs(t1 - t2);
+
+  document.getElementById('pt1v').textContent = t1.toFixed(1) + ' N·m';
+  document.getElementById('pt2v').textContent = t2.toFixed(1) + ' N·m';
+  document.getElementById('pdv').textContent = diff.toFixed(2) + ' N·m';
+
+  const badge = document.getElementById('badge2');
+  const eq = document.getElementById('eq2');
+  if (diff < TOLERANSI) {
+    badge.className = 'score-badge balanced';
+    badge.textContent = '✅ SEIMBANG';
+    eq.className = 'equation-box balanced';
+  } else {
+    badge.className = 'score-badge unbalanced';
+    badge.textContent = '❌ TIDAK SEIMBANG';
+    eq.className = 'equation-box unbalanced';
+  }
+  eq.textContent = `${p.p1.toFixed(1)}×${p.pr1.toFixed(2)} = ${p.p2.toFixed(1)}×${p.pr2.toFixed(2)}  →  ${t1.toFixed(1)} ${diff < TOLERANSI ? '=' : '≠'} ${t2.toFixed(1)} N·m`;
+  draw2();
+}
+
+function draw2() {
+  const p = getP();
+  const W = cv2.clientWidth, H = cv2.clientHeight;
+  if (W === 0 || H === 0) return;
+  ctx2.clearRect(0, 0, W, H);
+
+  const groundY = H - 25;
+  const shoulderY = H * 0.42;
+
+  const emberKiriX = W * 0.15;
+  const emberKananX = W * 0.85;
+
+  const totalR = p.pr1 + p.pr2;
+  const rasio = p.pr1 / totalR;
+  const bahuX = emberKiriX + (emberKananX - emberKiriX) * rasio;
+
+  const t1 = p.p1 * g * p.pr1;
+  const t2 = p.p2 * g * p.pr2;
+  const total = t1 + t2;
+  let angle = 0;
+  if (total > 0) angle = Math.atan2(t1 - t2, total) * 0.35;
+
+  const pikulY = shoulderY - 12;
+  const pikulLen = emberKananX - emberKiriX + 30;
+  const pikulCx = (emberKiriX + emberKananX) / 2;
+  const halfLen = pikulLen / 2;
+
+  const pikulKiriX = pikulCx - halfLen * Math.cos(angle);
+  const pikulKiriY = pikulY - halfLen * Math.sin(angle);
+  const pikulKananX = pikulCx + halfLen * Math.cos(angle);
+  const pikulKananY = pikulY + halfLen * Math.sin(angle);
+
+  ctx2.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx2.beginPath();
+  ctx2.ellipse(bahuX, groundY + 5, 55, 7, 0, 0, Math.PI * 2);
+  ctx2.fill();
+
+  ctx2.strokeStyle = '#ffa726';
+  ctx2.lineWidth = 9;
+  ctx2.lineCap = 'round';
+  ctx2.beginPath();
+  ctx2.moveTo(bahuX - 8, shoulderY + 35);
+  ctx2.lineTo(bahuX - 16, groundY);
+  ctx2.moveTo(bahuX + 8, shoulderY + 35);
+  ctx2.lineTo(bahuX + 16, groundY);
+  ctx2.stroke();
+
+  const bodyGrad = ctx2.createLinearGradient(bahuX, shoulderY - 35, bahuX, shoulderY + 40);
+  bodyGrad.addColorStop(0, '#ffd700');
+  bodyGrad.addColorStop(1, '#ff8f00');
+  ctx2.fillStyle = bodyGrad;
+  ctx2.beginPath();
+  ctx2.roundRect(bahuX - 16, shoulderY - 35, 32, 75, 7);
+  ctx2.fill();
+
+  ctx2.fillStyle = '#ffe0b2';
+  ctx2.beginPath();
+  ctx2.arc(bahuX, shoulderY - 52, 18, 0, Math.PI * 2);
+  ctx2.fill();
+  ctx2.strokeStyle = '#ff8f00';
+  ctx2.lineWidth = 2;
+  ctx2.stroke();
+
+  ctx2.fillStyle = '#1a2a35';
+  ctx2.beginPath();
+  ctx2.arc(bahuX - 5, shoulderY - 54, 2, 0, Math.PI * 2);
+  ctx2.arc(bahuX + 5, shoulderY - 54, 2, 0, Math.PI * 2);
+  ctx2.fill();
+
+  ctx2.strokeStyle = '#1a2a35';
+  ctx2.lineWidth = 1.6;
+  ctx2.beginPath();
+  ctx2.arc(bahuX, shoulderY - 48, 5, 0.2, Math.PI - 0.2);
+  ctx2.stroke();
+
+  ctx2.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx2.lineWidth = 12;
+  ctx2.beginPath();
+  ctx2.moveTo(pikulKiriX + 2, pikulKiriY + 2);
+  ctx2.lineTo(pikulKananX + 2, pikulKananY + 2);
+  ctx2.stroke();
+
+  const pikulGrad = ctx2.createLinearGradient(pikulKiriX, pikulKiriY, pikulKananX, pikulKananY);
+  pikulGrad.addColorStop(0, '#8d6e63');
+  pikulGrad.addColorStop(0.5, '#a1887f');
+  pikulGrad.addColorStop(1, '#8d6e63');
+  ctx2.strokeStyle = pikulGrad;
+  ctx2.lineWidth = 10;
+  ctx2.beginPath();
+  ctx2.moveTo(pikulKiriX, pikulKiriY);
+  ctx2.lineTo(pikulKananX, pikulKananY);
+  ctx2.stroke();
+
+  drawBucket(ctx2, pikulKiriX, pikulKiriY, p.p1, '#4fc3f7', '#2196f3');
+  drawBucket(ctx2, pikulKananX, pikulKananY, p.p2, '#ef5350', '#c62828');
+
+  ctx2.fillStyle = '#ffd700';
+  ctx2.beginPath();
+  ctx2.arc(bahuX, pikulY, 7, 0, Math.PI * 2);
+  ctx2.fill();
+  ctx2.strokeStyle = '#fff';
+  ctx2.lineWidth = 2.5;
+  ctx2.stroke();
+
+  ctx2.fillStyle = '#ffd700';
+  ctx2.font = 'bold 10px -apple-system, sans-serif';
+  ctx2.textAlign = 'center';
+  ctx2.fillText('BAHU', bahuX, pikulY - 18);
+
+  ctx2.strokeStyle = 'rgba(79,195,247,0.6)';
+  ctx2.lineWidth = 1.5;
+  ctx2.setLineDash([4, 4]);
+  ctx2.beginPath();
+  ctx2.moveTo(bahuX, pikulY);
+  ctx2.lineTo(pikulKiriX, pikulKiriY);
+  ctx2.stroke();
+  ctx2.setLineDash([]);
+
+  ctx2.strokeStyle = 'rgba(239,83,80,0.6)';
+  ctx2.lineWidth = 1.5;
+  ctx2.setLineDash([4, 4]);
+  ctx2.beginPath();
+  ctx2.moveTo(bahuX, pikulY);
+  ctx2.lineTo(pikulKananX, pikulKananY);
+  ctx2.stroke();
+  ctx2.setLineDash([]);
+
+  ctx2.fillStyle = '#4fc3f7';
+  ctx2.font = 'bold 12px -apple-system, sans-serif';
+  ctx2.strokeStyle = 'rgba(0,0,0,0.6)';
+  ctx2.lineWidth = 3;
+  const label1 = 'r₁ = ' + p.pr1.toFixed(2) + ' m';
+  ctx2.strokeText(label1, (bahuX + pikulKiriX) / 2, (pikulY + pikulKiriY) / 2 + 22);
+  ctx2.fillText(label1, (bahuX + pikulKiriX) / 2, (pikulY + pikulKiriY) / 2 + 22);
+
+  ctx2.fillStyle = '#ef5350';
+  const label2 = 'r₂ = ' + p.pr2.toFixed(2) + ' m';
+  ctx2.strokeText(label2, (bahuX + pikulKananX) / 2, (pikulY + pikulKananY) / 2 + 22);
+  ctx2.fillText(label2, (bahuX + pikulKananX) / 2, (pikulY + pikulKananY) / 2 + 22);
+
+  drawCornerWatermarks(ctx2);
+}
+
+function drawBucket(ctx, x, topY, mass, color, dark) {
+  const ropeLen = 45;
+  const bucketW = 26 + mass * 1.4;
+  const bucketH = 28 + mass * 1.6;
+  const bucketY = topY + ropeLen;
+
+  ctx.strokeStyle = '#cfd8dc';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, topY);
+  ctx.lineTo(x, bucketY);
+  ctx.stroke();
+
+  const bGrad = ctx.createLinearGradient(x - bucketW/2, bucketY, x + bucketW/2, bucketY);
+  bGrad.addColorStop(0, dark);
+  bGrad.addColorStop(1, color);
+  ctx.fillStyle = bGrad;
+  ctx.beginPath();
+  ctx.moveTo(x - bucketW/2, bucketY);
+  ctx.lineTo(x + bucketW/2, bucketY);
+  ctx.lineTo(x + bucketW/2 - 4, bucketY + bucketH);
+  ctx.lineTo(x - bucketW/2 + 4, bucketY + bucketH);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = dark;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(100, 200, 255, 0.5)';
+  ctx.beginPath();
+  ctx.ellipse(x, bucketY + 3, bucketW / 2 - 3, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 12px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+  ctx.lineWidth = 3;
+  const label = mass.toFixed(1) + ' L';
+  ctx.strokeText(label, x, bucketY + bucketH + 18);
+  ctx.fillText(label, x, bucketY + bucketH + 18);
+}
+
+function reset2() {
+  document.getElementById('p1').value = 5;
+  document.getElementById('p2').value = 8;
+  document.getElementById('pr1').value = 0.92;
+  document.getElementById('pr2').value = 0.58;
+  update2();
+}
+
+// =================== TAB 3: 1 EMBER ===================
+function getS() {
+  return {
+    s1: +document.getElementById('s1').value,
+    sr1: +document.getElementById('sr1').value,
+    se1: +document.getElementById('se1').value,
+  };
+}
+
+function update3() {
+  const s = getS();
+
+  let se1Final = s.se1;
+  if (se1Final > s.sr1) {
+    se1Final = s.sr1;
+    document.getElementById('se1').value = se1Final;
+  }
+  document.getElementById('se1').max = s.sr1.toFixed(2);
+
+  document.getElementById('s1v').textContent = s.s1.toFixed(1) + ' L';
+  document.getElementById('sr1v').textContent = s.sr1.toFixed(2) + ' m';
+  document.getElementById('se1v').textContent = se1Final.toFixed(2) + ' m';
+
+  const r1 = s.sr1 - se1Final;
+  const r2 = PANJANG_PIKULAN - s.sr1;
+
+  const tEmber = s.s1 * g * r1;
+  const tPenyeimbang = MASSA_PENYEIMBANG * g * r2;
+  const diff = Math.abs(tEmber - tPenyeimbang);
+
+  document.getElementById('st1v').textContent = tEmber.toFixed(1) + ' N·m';
+  document.getElementById('st2v').textContent = tPenyeimbang.toFixed(1) + ' N·m';
+  document.getElementById('sdv').textContent = diff.toFixed(2) + ' N·m';
+
+  const badge = document.getElementById('badge3');
+  const eq = document.getElementById('eq3');
+  if (diff < TOLERANSI) {
+    badge.className = 'score-badge balanced';
+    badge.textContent = '✅ SEIMBANG';
+    eq.className = 'equation-box balanced';
+  } else {
+    badge.className = 'score-badge unbalanced';
+    badge.textContent = '❌ TIDAK SEIMBANG';
+    eq.className = 'equation-box unbalanced';
+  }
+  eq.textContent = `${s.s1.toFixed(1)}×${r1.toFixed(2)} = ${MASSA_PENYEIMBANG.toFixed(1)}×${r2.toFixed(2)}  →  ${tEmber.toFixed(1)} ${diff < TOLERANSI ? '=' : '≠'} ${tPenyeimbang.toFixed(1)} N·m`;
+  draw3(r1, r2, tEmber, tPenyeimbang, se1Final);
+}
+
+function draw3(r1, r2, tEmber, tPenyeimbang, se1Final) {
+  const s = getS();
+  const W = cv3.clientWidth, H = cv3.clientHeight;
+  if (W === 0 || H === 0) return;
+  ctx3.clearRect(0, 0, W, H);
+
+  const groundY = H - 30;
+  const shoulderY = H * 0.42;
+
+  const pikulLengthPx = W * 0.75;
+  const pikulCx = W / 2;
+  const pikulY = shoulderY - 12;
+
+  const pikulKiriX = pikulCx - pikulLengthPx / 2;
+  const pikulKananX = pikulCx + pikulLengthPx / 2;
+
+  const scale = pikulLengthPx / PANJANG_PIKULAN;
+
+  const bahuX = pikulKiriX + s.sr1 * scale;
+  const emberX = pikulKiriX + se1Final * scale;
+
+  const total = tEmber + tPenyeimbang;
+  let angle = 0;
+  if (total > 0) angle = Math.atan2(tEmber - tPenyeimbang, total) * 0.3;
+
+  const pikulKiriY = pikulY - (pikulLengthPx / 2) * Math.sin(angle);
+  const pikulKananY = pikulY + (pikulLengthPx / 2) * Math.sin(angle);
+
+  const emberRatio = se1Final / PANJANG_PIKULAN;
+  const emberY = pikulKiriY + (pikulKananY - pikulKiriY) * emberRatio;
+
+  const bahuRatio = s.sr1 / PANJANG_PIKULAN;
+  const bahuPikulY = pikulKiriY + (pikulKananY - pikulKiriY) * bahuRatio;
+
+  const bebanX = pikulKananX - 15;
+  const bebanY = pikulKananY + 45;
+
+  ctx3.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx3.beginPath();
+  ctx3.ellipse(bahuX, groundY + 5, 60, 7, 0, 0, Math.PI * 2);
+  ctx3.fill();
+
+  ctx3.strokeStyle = '#ffa726';
+  ctx3.lineWidth = 9;
+  ctx3.lineCap = 'round';
+  ctx3.beginPath();
+  ctx3.moveTo(bahuX - 8, shoulderY + 35);
+  ctx3.lineTo(bahuX - 16, groundY);
+  ctx3.moveTo(bahuX + 8, shoulderY + 35);
+  ctx3.lineTo(bahuX + 16, groundY);
+  ctx3.stroke();
+
+  const bodyGrad = ctx3.createLinearGradient(bahuX, shoulderY - 35, bahuX, shoulderY + 40);
+  bodyGrad.addColorStop(0, '#ffd700');
+  bodyGrad.addColorStop(1, '#ff8f00');
+  ctx3.fillStyle = bodyGrad;
+  ctx3.beginPath();
+  ctx3.roundRect(bahuX - 16, shoulderY - 35, 32, 75, 7);
+  ctx3.fill();
+
+  ctx3.fillStyle = '#ffe0b2';
+  ctx3.beginPath();
+  ctx3.arc(bahuX, shoulderY - 52, 18, 0, Math.PI * 2);
+  ctx3.fill();
+  ctx3.strokeStyle = '#ff8f00';
+  ctx3.lineWidth = 2;
+  ctx3.stroke();
+
+  ctx3.fillStyle = '#1a2a35';
+  ctx3.beginPath();
+  ctx3.arc(bahuX - 5, shoulderY - 54, 2, 0, Math.PI * 2);
+  ctx3.arc(bahuX + 5, shoulderY - 54, 2, 0, Math.PI * 2);
+  ctx3.fill();
+
+  ctx3.strokeStyle = '#1a2a35';
+  ctx3.lineWidth = 1.6;
+  ctx3.beginPath();
+  ctx3.arc(bahuX, shoulderY - 48, 5, 0.2, Math.PI - 0.2);
+  ctx3.stroke();
+
+  ctx3.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx3.lineWidth = 12;
+  ctx3.beginPath();
+  ctx3.moveTo(pikulKiriX + 2, pikulKiriY + 2);
+  ctx3.lineTo(pikulKananX + 2, pikulKananY + 2);
+  ctx3.stroke();
+
+  const pikulGrad = ctx3.createLinearGradient(pikulKiriX, pikulKiriY, pikulKananX, pikulKananY);
+  pikulGrad.addColorStop(0, '#8d6e63');
+  pikulGrad.addColorStop(0.5, '#a1887f');
+  pikulGrad.addColorStop(1, '#8d6e63');
+  ctx3.strokeStyle = pikulGrad;
+  ctx3.lineWidth = 10;
+  ctx3.beginPath();
+  ctx3.moveTo(pikulKiriX, pikulKiriY);
+  ctx3.lineTo(pikulKananX, pikulKananY);
+  ctx3.stroke();
+
+  drawBucket(ctx3, emberX, emberY, s.s1, '#4fc3f7', '#2196f3');
+
+  ctx3.strokeStyle = '#cfd8dc';
+  ctx3.lineWidth = 2;
+  ctx3.beginPath();
+  ctx3.moveTo(bebanX, pikulKananY);
+  ctx3.lineTo(bebanX, bebanY);
+  ctx3.stroke();
+
+  const bGrad = ctx3.createLinearGradient(bebanX - 15, bebanY, bebanX + 15, bebanY + 40);
+  bGrad.addColorStop(0, '#a1887f');
+  bGrad.addColorStop(1, '#5d4037');
+  ctx3.fillStyle = bGrad;
+  ctx3.beginPath();
+  ctx3.roundRect(bebanX - 15, bebanY, 30, 40, 5);
+  ctx3.fill();
+  ctx3.strokeStyle = '#4e342e';
+  ctx3.lineWidth = 1.5;
+  ctx3.stroke();
+
+  ctx3.fillStyle = '#ffb3b3';
+  ctx3.font = 'bold 10px -apple-system, sans-serif';
+  ctx3.textAlign = 'center';
+  ctx3.strokeStyle = 'rgba(0,0,0,0.6)';
+  ctx3.lineWidth = 3;
+  ctx3.strokeText('PENYEIMBANG', bebanX, bebanY + 54);
+  ctx3.fillText('PENYEIMBANG', bebanX, bebanY + 54);
+
+  ctx3.fillStyle = '#ffd700';
+  ctx3.beginPath();
+  ctx3.arc(bahuX, bahuPikulY, 7, 0, Math.PI * 2);
+  ctx3.fill();
+  ctx3.strokeStyle = '#fff';
+  ctx3.lineWidth = 2.5;
+  ctx3.stroke();
+
+  ctx3.fillStyle = '#ffd700';
+  ctx3.font = 'bold 11px -apple-system, sans-serif';
+  ctx3.textAlign = 'center';
+  ctx3.fillText('BAHU', bahuX, bahuPikulY - 18);
+
+  ctx3.strokeStyle = 'rgba(79,195,247,0.6)';
+  ctx3.lineWidth = 1.5;
+  ctx3.setLineDash([4, 4]);
+  ctx3.beginPath();
+  ctx3.moveTo(bahuX, bahuPikulY);
+  ctx3.lineTo(emberX, emberY);
+  ctx3.stroke();
+  ctx3.setLineDash([]);
+
+  ctx3.strokeStyle = 'rgba(239,83,80,0.6)';
+  ctx3.lineWidth = 1.5;
+  ctx3.setLineDash([4, 4]);
+  ctx3.beginPath();
+  ctx3.moveTo(bahuX, bahuPikulY);
+  ctx3.lineTo(bebanX, bebanY);
+  ctx3.stroke();
+  ctx3.setLineDash([]);
+
+  ctx3.fillStyle = '#4fc3f7';
+  ctx3.font = 'bold 12px -apple-system, sans-serif';
+  ctx3.strokeStyle = 'rgba(0,0,0,0.6)';
+  ctx3.lineWidth = 3;
+  const label1 = 'r₁ = ' + r1.toFixed(2) + ' m';
+  ctx3.strokeText(label1, (bahuX + emberX) / 2, (bahuPikulY + emberY) / 2 + 22);
+  ctx3.fillText(label1, (bahuX + emberX) / 2, (bahuPikulY + emberY) / 2 + 22);
+
+  ctx3.fillStyle = '#ef5350';
+  const label2 = 'r₂ = ' + r2.toFixed(2) + ' m';
+  ctx3.strokeText(label2, (bahuX + bebanX) / 2, (bahuPikulY + bebanY) / 2 + 22);
+  ctx3.fillText(label2, (bahuX + bebanX) / 2, (bahuPikulY + bebanY) / 2 + 22);
+
+  drawCornerWatermarks(ctx3);
+}
+
+function reset3() {
+  document.getElementById('s1').value = 8;
+  document.getElementById('sr1').value = 0.50;
+  document.getElementById('se1').max = 0.50;
+  document.getElementById('se1').value = 0.10;
+  update3();
+}
+
+// =================== EVENT ===================
+['m1','r1','m2','r2'].forEach(id => {
+  document.getElementById(id).addEventListener('input', update1);
+});
+['p1','p2','pr1','pr2'].forEach(id => {
+  document.getElementById(id).addEventListener('input', update2);
+});
+['s1','sr1','se1'].forEach(id => {
+  document.getElementById(id).addEventListener('input', update3);
+});
+
+// =================== INIT ===================
+function initAll() {
+  setupCanvas(cv1, ctx1);
+  setupCanvas(cv2, ctx2);
+  setupCanvas(cv3, ctx3);
+  update1();
+  update2();
+  update3();
+}
+
+window.addEventListener('load', () => {
+  setTimeout(initAll, 100);
+});
+
+window.addEventListener('resize', () => {
+  setupCanvas(cv1, ctx1);
+  setupCanvas(cv2, ctx2);
+  setupCanvas(cv3, ctx3);
+  draw1(); draw2(); draw3();
+});
+
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    if (w < 2 * r) r = w / 2;
+    if (h < 2 * r) r = h / 2;
+    this.beginPath();
+    this.moveTo(x + r, y);
+    this.arcTo(x + w, y, x + w, y + h, r);
+    this.arcTo(x + w, y + h, x, y + h, r);
+    this.arcTo(x, y + h, x, y, r);
+    this.arcTo(x, y, x + w, y, r);
+    this.closePath();
+    return this;
+  };
+}
+</script>
+
+</body>
+</html>
