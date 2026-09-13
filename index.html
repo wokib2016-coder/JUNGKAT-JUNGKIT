@@ -94,7 +94,7 @@
   }
   .score-badge {
     position:absolute;
-    top:28px; right:10px;
+    top:34px; right:12px;
     padding:5px 12px;
     border-radius:20px;
     font-size:0.7rem;
@@ -103,6 +103,7 @@
     transition:all 0.3s cubic-bezier(.4,0,.2,1);
     letter-spacing:0.3px;
     box-shadow:0 2px 10px rgba(0,0,0,0.3);
+    z-index: 5;
   }
   .score-badge.balanced {
     background:rgba(76,175,80,0.35);
@@ -136,6 +137,7 @@
     letter-spacing:0.3px;
     white-space:nowrap;
     transition:all 0.3s;
+    z-index: 5;
   }
   .equation-box.balanced {
     background:rgba(76,175,80,0.25);
@@ -381,27 +383,20 @@
     </div>
     <div class="ctrl">
       <div class="ctrl-head">
-        <span class="lbl"><span class="dot shoulder"></span> Jarak Bahu ke Ember Depan (r₁)</span>
-        <span class="val" id="pr1v">0.92 m</span>
+        <span class="lbl"><span class="dot shoulder"></span> Posisi Bahu (Geser Titik Tumpu)</span>
+        <span class="val" id="posBahu2v">0.92 m</span>
       </div>
-      <input type="range" id="pr1" min="0.1" max="1.4" value="0.92" step="0.01">
-    </div>
-    <div class="ctrl">
-      <div class="ctrl-head">
-        <span class="lbl"><span class="dot shoulder"></span> Jarak Bahu ke Ember Belakang (r₂)</span>
-        <span class="val" id="pr2v">0.58 m</span>
-      </div>
-      <input type="range" id="pr2" min="0.1" max="1.4" value="0.58" step="0.01">
+      <input type="range" id="posBahu2" min="0.2" max="1.3" value="0.92" step="0.01">
     </div>
   </div>
 
   <div class="info-grid">
     <div class="info-card left">
-      <div class="k">τ Ember Depan</div>
+      <div class="k">τ Ember Depan (r₁)</div>
       <div class="v" id="pt1v">46.0 N·m</div>
     </div>
     <div class="info-card right">
-      <div class="k">τ Ember Belakang</div>
+      <div class="k">τ Ember Belakang (r₂)</div>
       <div class="v" id="pt2v">46.4 N·m</div>
     </div>
     <div class="info-card diff diff-card">
@@ -434,11 +429,11 @@
         <span class="lbl"><span class="dot shoulder"></span> Posisi Bahu dari Ujung Kiri</span>
         <span class="val" id="sr1v">0.50 m</span>
       </div>
-      <input type="range" id="sr1" min="0.10" max="1.40" value="0.50" step="0.01">
+      <input type="range" id="sr1" min="0.20" max="1.30" value="0.50" step="0.01">
     </div>
     <div class="ctrl">
       <div class="ctrl-head">
-        <span class="lbl"><span class="dot shoulder"></span> Posisi Ember dari Ujung Kiri</span>
+        <span class="lbl"><span class="dot left"></span> Posisi Ember dari Ujung Kiri</span>
         <span class="val" id="se1v">0.10 m</span>
       </div>
       <input type="range" id="se1" min="0.05" max="1.40" value="0.10" step="0.01">
@@ -453,11 +448,11 @@
 
   <div class="info-grid">
     <div class="info-card left">
-      <div class="k">τ Ember (beban)</div>
+      <div class="k">τ Ember (r₁)</div>
       <div class="v" id="st1v">32.0 N·m</div>
     </div>
     <div class="info-card right">
-      <div class="k">τ Penyeimbang</div>
+      <div class="k">τ Penyeimbang (r₂)</div>
       <div class="v" id="st2v">100.0 N·m</div>
     </div>
     <div class="info-card diff diff-card">
@@ -480,7 +475,7 @@ const ctx2 = cv2.getContext('2d');
 const cv3 = document.getElementById('cv3');
 const ctx3 = cv3.getContext('2d');
 
-const PANJANG_PIKULAN = 1.5; // meter
+const PANJANG_PIKULAN = 1.5; // meter total panjang bambu pikulan
 const TOLERANSI = 2.5; // N·m
 const MASSA_PENYEIMBANG = 10; // kg (TETAP)
 
@@ -508,17 +503,16 @@ function switchTab(i) {
   }, 50);
 }
 
-// Fungsi pembantu untuk menggambar teks sudut (Wokib bergaris bawah, Deep Learning di bawahnya, dan 2026 di kanan atas)
+// Fungsi sudut (Wokib bergaris bawah, Deep Learning, dan 2026)
 function drawCornerWatermarks(ctx) {
   ctx.save();
   ctx.font = 'bold 11px -apple-system, sans-serif';
   
-  // Sudut Kiri Atas: Wokib (dengan garis bawah) & Deep Learning
+  // Kiri Atas: Wokib & Deep Learning
   ctx.textAlign = 'left';
   ctx.fillStyle = '#ffd700';
   ctx.fillText('Wokib', 12, 20);
   
-  // Garis bawah kata Wokib
   ctx.strokeStyle = '#ffd700';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -526,12 +520,11 @@ function drawCornerWatermarks(ctx) {
   ctx.lineTo(12 + ctx.measureText('Wokib').width, 23);
   ctx.stroke();
 
-  // Tulisan Deep Learning di bawahnya
   ctx.font = '9px -apple-system, sans-serif';
   ctx.fillStyle = '#7a95a3';
   ctx.fillText('Deep Learning', 12, 35);
 
-  // Sudut Kanan Atas: 2026
+  // Kanan Atas: 2026
   ctx.font = 'bold 11px -apple-system, sans-serif';
   ctx.fillStyle = '#7a95a3';
   ctx.textAlign = 'right';
@@ -755,20 +748,23 @@ function getP() {
   return {
     p1: +document.getElementById('p1').value,
     p2: +document.getElementById('p2').value,
-    pr1: +document.getElementById('pr1').value,
-    pr2: +document.getElementById('pr2').value,
+    posBahu: +document.getElementById('posBahu2').value, // posisi bahu dari ember depan (r1)
   };
 }
 
 function update2() {
   const p = getP();
+  
+  // r1 otomatis dari posisi bahu, r2 otomatis sisa panjang pikulan
+  const r1 = p.posBahu;
+  const r2 = PANJANG_PIKULAN - r1;
+
   document.getElementById('p1v').textContent = p.p1.toFixed(1) + ' L';
   document.getElementById('p2v').textContent = p.p2.toFixed(1) + ' L';
-  document.getElementById('pr1v').textContent = p.pr1.toFixed(2) + ' m';
-  document.getElementById('pr2v').textContent = p.pr2.toFixed(2) + ' m';
+  document.getElementById('posBahu2v').textContent = r1.toFixed(2) + ' m (r₂ = ' + r2.toFixed(2) + 'm)';
 
-  const t1 = p.p1 * g * p.pr1;
-  const t2 = p.p2 * g * p.pr2;
+  const t1 = p.p1 * g * r1;
+  const t2 = p.p2 * g * r2;
   const diff = Math.abs(t1 - t2);
 
   document.getElementById('pt1v').textContent = t1.toFixed(1) + ' N·m';
@@ -786,11 +782,12 @@ function update2() {
     badge.textContent = '❌ TIDAK SEIMBANG';
     eq.className = 'equation-box unbalanced';
   }
-  eq.textContent = `${p.p1.toFixed(1)}×${p.pr1.toFixed(2)} = ${p.p2.toFixed(1)}×${p.pr2.toFixed(2)}  →  ${t1.toFixed(1)} ${diff < TOLERANSI ? '=' : '≠'} ${t2.toFixed(1)} N·m`;
-  draw2();
+  eq.textContent = `${p.p1.toFixed(1)}×${r1.toFixed(2)} = ${p.p2.toFixed(1)}×${r2.toFixed(2)}  →  ${t1.toFixed(1)} ${diff < TOLERANSI ? '=' : '≠'} ${t2.toFixed(1)} N·m`;
+  
+  draw2(r1, r2, t1, t2);
 }
 
-function draw2() {
+function draw2(r1, r2, t1, t2) {
   const p = getP();
   const W = cv2.clientWidth, H = cv2.clientHeight;
   if (W === 0 || H === 0) return;
@@ -801,21 +798,18 @@ function draw2() {
 
   const emberKiriX = W * 0.15;
   const emberKananX = W * 0.85;
+  const pikulLenPx = emberKananX - emberKiriX;
+  const scalePx = pikulLenPx / PANJANG_PIKULAN;
 
-  const totalR = p.pr1 + p.pr2;
-  const rasio = p.pr1 / totalR;
-  const bahuX = emberKiriX + (emberKananX - emberKiriX) * rasio;
+  const bahuX = emberKiriX + r1 * scalePx;
 
-  const t1 = p.p1 * g * p.pr1;
-  const t2 = p.p2 * g * p.pr2;
   const total = t1 + t2;
   let angle = 0;
   if (total > 0) angle = Math.atan2(t1 - t2, total) * 0.35;
 
   const pikulY = shoulderY - 12;
-  const pikulLen = emberKananX - emberKiriX + 30;
   const pikulCx = (emberKiriX + emberKananX) / 2;
-  const halfLen = pikulLen / 2;
+  const halfLen = (pikulLenPx + 30) / 2;
 
   const pikulKiriX = pikulCx - halfLen * Math.cos(angle);
   const pikulKiriY = pikulY - halfLen * Math.sin(angle);
@@ -883,8 +877,8 @@ function draw2() {
   ctx2.lineTo(pikulKananX, pikulKananY);
   ctx2.stroke();
 
-  drawBucket(ctx2, pikulKiriX, pikulKiriY, p.p1, '#4fc3f7', '#2196f3');
-  drawBucket(ctx2, pikulKananX, pikulKananY, p.p2, '#ef5350', '#c62828');
+  drawBucket(ctx2, emberKiriX, pikulY, p.p1, '#4fc3f7', '#2196f3');
+  drawBucket(ctx2, emberKananX, pikulY, p.p2, '#ef5350', '#c62828');
 
   ctx2.fillStyle = '#ffd700';
   ctx2.beginPath();
@@ -904,7 +898,7 @@ function draw2() {
   ctx2.setLineDash([4, 4]);
   ctx2.beginPath();
   ctx2.moveTo(bahuX, pikulY);
-  ctx2.lineTo(pikulKiriX, pikulKiriY);
+  ctx2.lineTo(emberKiriX, pikulY);
   ctx2.stroke();
   ctx2.setLineDash([]);
 
@@ -913,7 +907,7 @@ function draw2() {
   ctx2.setLineDash([4, 4]);
   ctx2.beginPath();
   ctx2.moveTo(bahuX, pikulY);
-  ctx2.lineTo(pikulKananX, pikulKananY);
+  ctx2.lineTo(emberKananX, pikulY);
   ctx2.stroke();
   ctx2.setLineDash([]);
 
@@ -921,14 +915,14 @@ function draw2() {
   ctx2.font = 'bold 12px -apple-system, sans-serif';
   ctx2.strokeStyle = 'rgba(0,0,0,0.6)';
   ctx2.lineWidth = 3;
-  const label1 = 'r₁ = ' + p.pr1.toFixed(2) + ' m';
-  ctx2.strokeText(label1, (bahuX + pikulKiriX) / 2, (pikulY + pikulKiriY) / 2 + 22);
-  ctx2.fillText(label1, (bahuX + pikulKiriX) / 2, (pikulY + pikulKiriY) / 2 + 22);
+  const label1 = 'r₁ = ' + r1.toFixed(2) + ' m';
+  ctx2.strokeText(label1, (bahuX + emberKiriX) / 2, pikulY + 22);
+  ctx2.fillText(label1, (bahuX + emberKiriX) / 2, pikulY + 22);
 
   ctx2.fillStyle = '#ef5350';
-  const label2 = 'r₂ = ' + p.pr2.toFixed(2) + ' m';
-  ctx2.strokeText(label2, (bahuX + pikulKananX) / 2, (pikulY + pikulKananY) / 2 + 22);
-  ctx2.fillText(label2, (bahuX + pikulKananX) / 2, (pikulY + pikulKananY) / 2 + 22);
+  const label2 = 'r₂ = ' + r2.toFixed(2) + ' m';
+  ctx2.strokeText(label2, (bahuX + emberKananX) / 2, pikulY + 22);
+  ctx2.fillText(label2, (bahuX + emberKananX) / 2, pikulY + 22);
 
   drawCornerWatermarks(ctx2);
 }
@@ -979,8 +973,7 @@ function drawBucket(ctx, x, topY, mass, color, dark) {
 function reset2() {
   document.getElementById('p1').value = 5;
   document.getElementById('p2').value = 8;
-  document.getElementById('pr1').value = 0.92;
-  document.getElementById('pr2').value = 0.58;
+  document.getElementById('posBahu2').value = 0.92;
   update2();
 }
 
@@ -1007,6 +1000,7 @@ function update3() {
   document.getElementById('sr1v').textContent = s.sr1.toFixed(2) + ' m';
   document.getElementById('se1v').textContent = se1Final.toFixed(2) + ' m';
 
+  // Lengan beban (r1) dan lengan penyeimbang (r2) otomatis mengikuti pergeseran bahu (sr1)
   const r1 = s.sr1 - se1Final;
   const r2 = PANJANG_PIKULAN - s.sr1;
 
@@ -1030,6 +1024,7 @@ function update3() {
     eq.className = 'equation-box unbalanced';
   }
   eq.textContent = `${s.s1.toFixed(1)}×${r1.toFixed(2)} = ${MASSA_PENYEIMBANG.toFixed(1)}×${r2.toFixed(2)}  →  ${tEmber.toFixed(1)} ${diff < TOLERANSI ? '=' : '≠'} ${tPenyeimbang.toFixed(1)} N·m`;
+  
   draw3(r1, r2, tEmber, tPenyeimbang, se1Final);
 }
 
@@ -1218,7 +1213,7 @@ function reset3() {
 ['m1','r1','m2','r2'].forEach(id => {
   document.getElementById(id).addEventListener('input', update1);
 });
-['p1','p2','pr1','pr2'].forEach(id => {
+['p1','p2','posBahu2'].forEach(id => {
   document.getElementById(id).addEventListener('input', update2);
 });
 ['s1','sr1','se1'].forEach(id => {
